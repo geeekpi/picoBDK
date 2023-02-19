@@ -107,12 +107,34 @@ class ledButton:
         self.ledPin.value(False)
         self.buzzer.stopPlayingNote()
         
+class Sequence:
+    def __init__(self):
+        self.sequence = [0,1,2,3]
+        self.currentIndex = 0
+        
+    def checkComplete(self):
+        return (self.currentIndex >= len(self.sequence))
+    
+    def reset(self):
+        self.currentIndex = 0
+        
+    def nextIndex(self):
+        nextIndex = self.sequence[self.currentIndex]
+        self.currentIndex += 1
+        return nextIndex
+    
+    def checkUserInput(self, indexPressed):
+        expectedIndex = self.nextIndex()
+        print("Index pressed: " + str(indexPressed) + ", expected index: " + str(expectedIndex))
+        return indexPressed == expectedIndex
+    
+    def remaining(self):
+        return len(self.sequence) - self.currentIndex
+        
 class gameEngine:
     def __init__(self, display, button0, button1, button2, button3, buzzer):
         self.display = display
-        self.sequence = [0,1,2,3]
-        self.userSequenceIndex = 0
-        self.sequenceIndex = 0
+        self.sequence = Sequence()
         self.buttons = [button0, button1, button2, button3]
         self.buzzer = buzzer
         self.blinkFlag = True
@@ -124,35 +146,31 @@ class gameEngine:
             self.collectUserSequence()
     
     def blinkSequence(self):
-        print(str(self.sequenceIndex) + " " + str(self.blinkFlag))
-        display.chars(" " + str(len(self.sequence) - self.sequenceIndex) + " ", 100, 0)
-        if(self.sequenceIndex >= len(self.sequence)):
+        display.chars(" " + str(self.sequence.remaining()) + " ", 100, 0)
+        if(self.sequence.checkComplete()):
             self.blinkFlag = False
-            self.sequenceIndex = 0
+            self.sequence.reset()
         else:
-            currentSeq = self.sequence[self.sequenceIndex]
+            currentSeq = self.sequence.nextIndex()
             self.buttons[currentSeq].blink()
-            self.sequenceIndex += 1
             
     def collectUserSequence(self):
-        indexPressed = 0
-        for button in self.buttons:
-            if(button.checkFullPress()):
-                expectedIndex = self.sequence[self.userSequenceIndex]
-                print("Index pressed: " + str(indexPressed) + ", expected index: " + str(expectedIndex))
-                if(expectedIndex != indexPressed):
-                    self.buzzer.shortBeep()
-                    self.blinkFlag = True
-                    self.userSequenceIndex = 0
-                    return
-                if(self.userSequenceIndex+1 == len(self.sequence)):
-                    self.blinkFlag = True
-                    self.userSequenceIndex = 0
-                    return
-                self.userSequenceIndex += 1
-            else:
-                indexPressed += 1
-        
+        if(self.sequence.checkComplete()):
+            # completed sequence correctly!
+            self.blinkFlag = True
+            self.sequence.reset()
+        else:    
+            indexPressed = 0
+            for button in self.buttons:
+                if(button.checkFullPress()):
+                    if(not self.sequence.checkUserInput(indexPressed)):
+                        self.buzzer.shortBeep()
+                        self.blinkFlag = True
+                        self.userSequenceIndex = 0
+                        return
+                else:
+                    indexPressed += 1
+            
 
 #f = open("count.txt")
 #print(f.read())
