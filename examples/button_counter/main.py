@@ -71,8 +71,8 @@ countTitleSize = len(countTitle)
 
 display.chars(countTitle, 0, 0)
 
-addPin = Pin(17, Pin.IN)
-subtractPin = Pin(16, Pin.IN)
+addPin = Pin(17, Pin.IN) #Connect a button to pin 17
+subtractPin = Pin(16, Pin.IN) #Connect a button to pin 16
 addButton = button()
 subtractButton = button()
 
