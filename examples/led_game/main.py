@@ -56,10 +56,12 @@ class buzzer:
         self.buzzerPin.freq(500)
         
         
-    def shortBeep(self):
-        self.buzzerPin.freq(5000)
+    def errorBeep(self):
+        self.buzzerPin.freq(500)
         self.buzzerPin.duty_u16(100000)
-        time.sleep(2)
+        time.sleep(.5)
+        self.buzzerPin.freq(300)
+        time.sleep(1)
         self.buzzerPin.duty_u16(0)
         
     def startPlayingNote(self, note,volume):
@@ -69,7 +71,7 @@ class buzzer:
     def stopPlayingNote(self):
         self.buzzerPin.duty_u16(0)
 
-class ledButton:
+class LEDButton:
     def __init__(self, buttonPinNum, ledPinNum, buzzer, note, volume):
         self.buttonPin = Pin(buttonPinNum, Pin.IN)
         self.ledPin = Pin(ledPinNum, Pin.OUT)
@@ -97,25 +99,31 @@ class ledButton:
         else:
             return False
     
-    def unPress(self):
+    def ledOff(self):
         self.ledPin.value(False)
+    
+    def ledOn(self):
+        self.ledPin.value(True)
         
     def blink(self):
         self.ledPin.value(True)
         self.buzzer.startPlayingNote(self.note, self.volume)
-        time.sleep(1)
+        time.sleep(.5)
         self.ledPin.value(False)
         self.buzzer.stopPlayingNote()
         
 class Sequence:
     def __init__(self):
-        self.sequence = [0,1,2,3]
+        self.sequence = []
+        self.increaseSequence()
+        self.increaseSequence()
+        self.increaseSequence()
         self.currentIndex = 0
         
     def checkComplete(self):
         return (self.currentIndex >= len(self.sequence))
     
-    def reset(self):
+    def resetCurrentIndex(self):
         self.currentIndex = 0
         
     def nextIndex(self):
@@ -130,6 +138,14 @@ class Sequence:
     
     def remaining(self):
         return len(self.sequence) - self.currentIndex
+    
+    def increaseSequence(self):
+        newSeq = randint(0,3)
+        self.sequence.append(newSeq)
+        self.resetCurrentIndex()
+        
+    def currentSize(self):
+        return len(self.sequence)
         
 class gameEngine:
     def __init__(self, display, button0, button1, button2, button3, buzzer):
@@ -138,18 +154,31 @@ class gameEngine:
         self.buttons = [button0, button1, button2, button3]
         self.buzzer = buzzer
         self.blinkFlag = True
+        self.pauseFlag = True
+        f = open("highscore")
+        self.highscore = int(f.read())
+        f.close()
+        display.chars("Current Highscore: " + str(self.highscore), 0, 0)
+        display.chars("Ready?               ", 0, 30)
+        display.chars("Remaining: ", 0, 90)
         
     def run(self):
-        if(self.blinkFlag):
-            self.blinkSequence()
+        if(self.pauseFlag):
+            for button in self.buttons:
+                if(button.checkFullPress()):
+                    self.pauseFlag = False
+                    time.sleep(1)
         else:
-            self.collectUserSequence()
-    
+            if(self.blinkFlag):
+                self.blinkSequence()
+            else:
+                self.collectUserSequence()
+        
     def blinkSequence(self):
-        display.chars(" " + str(self.sequence.remaining()) + " ", 100, 0)
+        display.chars(" " + str(self.sequence.remaining()) + " ", 150, 90)
         if(self.sequence.checkComplete()):
             self.blinkFlag = False
-            self.sequence.reset()
+            self.sequence.resetCurrentIndex()
         else:
             currentSeq = self.sequence.nextIndex()
             self.buttons[currentSeq].blink()
@@ -157,35 +186,59 @@ class gameEngine:
     def collectUserSequence(self):
         if(self.sequence.checkComplete()):
             # completed sequence correctly!
+            display.chars("Nice!              ", 0, 30)
             self.blinkFlag = True
-            self.sequence.reset()
-        else:    
+            self.sequence.increaseSequence()
+        else:
+            display.chars(" " + str(self.sequence.remaining()) + " ", 150, 90)
             indexPressed = 0
             for button in self.buttons:
                 if(button.checkFullPress()):
                     if(not self.sequence.checkUserInput(indexPressed)):
-                        self.buzzer.shortBeep()
-                        self.blinkFlag = True
-                        self.userSequenceIndex = 0
+                        score = self.sequence.currentSize() - 1
+                        if(score > self.highscore):
+                            display.chars("New Highscore! " + str(score), 0, 30)
+                            display.chars("Current Highscore: " + str(score), 0, 0)
+                            f = open("highscore", "w")
+                            f.write(str(score))
+                            f.close()
+                        else:
+                            display.chars("Try again?               ", 0, 30)
+                        self.wrongGuess()
+                        
                         return
                 else:
                     indexPressed += 1
+                    
+    def wrongGuess(self):
+        i = 0
+        while (i < 4):
+            i+=1
+            if(i < 2):
+                self.buzzer.startPlayingNote(500,10000)
+            else:
+                self.buzzer.startPlayingNote(300,10000)
+                
+            time.sleep(.2)
+            for button in self.buttons:
+                button.ledOn()
+            time.sleep(.2)
+            for button in self.buttons:
+                button.ledOff()
+                
+        self.buzzer.stopPlayingNote()
+                
+        self.blinkFlag = True
+        self.pauseFlag = True
+        del self.sequence
+        self.sequence = Sequence()
+                    
             
-
-#f = open("count.txt")
-#print(f.read())
-#f.close()
-
-count = 0
-countTitle = "Count: "
-countTitleSize = len(countTitle)
-
-display.chars(countTitle, 0, 0)
 buzz = buzzer(18)
-button1 = ledButton(0,1, buzz, 750, 14000)
-button2 = ledButton(2,3, buzz, 600, 11000)
-button3 = ledButton(16,17, buzz, 500, 9500)
-button4 = ledButton(10,11, buzz, 400, 80000)
+button1 = LEDButton(0,1, buzz, 750, 14000)
+button2 = LEDButton(2,3, buzz, 600, 11000)
+button3 = LEDButton(16,17, buzz, 500, 9500)
+button4 = LEDButton(10,11, buzz, 400, 80000)
 
 engine = gameEngine(display, button1, button2, button3, button4, buzz)
 
