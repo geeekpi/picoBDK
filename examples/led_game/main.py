@@ -12,7 +12,6 @@ from random import randint
 #Setup display stuff
 SCR_WIDTH = const(320)
 SCR_HEIGHT = const(240)
-#SCR_ROT = const(2)
 SCR_ROT = const(3)
 CENTER_Y = int(SCR_WIDTH/2)
 CENTER_X = int(SCR_HEIGHT/2)
@@ -50,19 +49,11 @@ display.set_color(color565(255, 0, 0), color565(150, 150, 150))
 display.erase()
 display.set_pos(0,0)
 
+#Classes to run the game
 class buzzer:
     def __init__(self, pin):
         self.buzzerPin = PWM(Pin(pin))
         self.buzzerPin.freq(500)
-        
-        
-    def errorBeep(self):
-        self.buzzerPin.freq(500)
-        self.buzzerPin.duty_u16(100000)
-        time.sleep(.5)
-        self.buzzerPin.freq(300)
-        time.sleep(1)
-        self.buzzerPin.duty_u16(0)
         
     def startPlayingNote(self, note,volume):
         self.buzzerPin.freq(note)
@@ -78,12 +69,6 @@ class LEDButton:
         self.buzzer = buzzer
         self.note = note
         self.volume = volume
-        
-        
-    def checkPress(self):
-        pushed = not self.buttonPin.value()
-        self.ledPin.value(pushed)
-        return pushed
     
     def checkFullPress(self):
         pushed = not self.buttonPin.value()
@@ -147,6 +132,7 @@ class Sequence:
     def currentSize(self):
         return len(self.sequence)
         
+        
 class gameEngine:
     def __init__(self, display, button0, button1, button2, button3, buzzer):
         self.display = display
@@ -167,6 +153,7 @@ class gameEngine:
             for button in self.buttons:
                 if(button.checkFullPress()):
                     self.pauseFlag = False
+                    display.chars("                 ", 0, 60)
                     time.sleep(1)
         else:
             if(self.blinkFlag):
@@ -186,7 +173,7 @@ class gameEngine:
     def collectUserSequence(self):
         if(self.sequence.checkComplete()):
             # completed sequence correctly!
-            display.chars("Nice!              ", 0, 30)
+            display.chars("Nice!                            ", 0, 30)
             self.blinkFlag = True
             self.sequence.increaseSequence()
         else:
@@ -203,7 +190,8 @@ class gameEngine:
                             f.write(str(score))
                             f.close()
                         else:
-                            display.chars("Try again?               ", 0, 30)
+                            display.chars("Game over, score: " + str(score) + "                 ", 0, 30)
+                        display.chars("Try again?             ", 0, 60)
                         self.wrongGuess()
                         
                         return
@@ -233,20 +221,16 @@ class gameEngine:
         del self.sequence
         self.sequence = Sequence()
                     
-            
-buzz = buzzer(18)
-button1 = LEDButton(0,1, buzz, 750, 14000)
-button2 = LEDButton(2,3, buzz, 600, 11000)
-button3 = LEDButton(16,17, buzz, 500, 9500)
-button4 = LEDButton(10,11, buzz, 400, 80000)
+#Wiring information
+#To use the code as is follow the comments
+buzz = buzzer(18)                             #Pin 18 to Beep
+button1 = LEDButton(0,1, buzz, 750, 14000)    #Pin 0 to k4 and Pin 1 to LED1
+button2 = LEDButton(2,3, buzz, 600, 11000)    #Pin 2 to k3 and Pin 3 to LED2
+button3 = LEDButton(16,17, buzz, 500, 9500)   #Pin 16 to k2 and Pin 17 to LED3
+button4 = LEDButton(10,11, buzz, 400, 80000)  #Pin 10 to k1 and Pin 11 to LED4
 
 engine = gameEngine(display, button1, button2, button3, button4, buzz)
 
 while True:
     engine.run()
-    #button1.checkPress()
-    #button2.checkPress()
-    #button3.checkPress()
-    #button4.checkPress()
-    
         
