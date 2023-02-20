@@ -134,8 +134,7 @@ class Sequence:
         
         
 class gameEngine:
-    def __init__(self, display, button0, button1, button2, button3, buzzer):
-        self.display = display
+    def __init__(self, button0, button1, button2, button3, buzzer):
         self.sequence = Sequence()
         self.buttons = [button0, button1, button2, button3]
         self.buzzer = buzzer
@@ -229,7 +228,7 @@ button2 = LEDButton(2,3, buzz, 600, 11000)    #Pin 2 to k3 and Pin 3 to LED2
 button3 = LEDButton(16,17, buzz, 500, 9500)   #Pin 16 to k2 and Pin 17 to LED3
 button4 = LEDButton(10,11, buzz, 400, 80000)  #Pin 10 to k1 and Pin 11 to LED4
 
-engine = gameEngine(display, button1, button2, button3, button4, buzz)
+engine = gameEngine(button1, button2, button3, button4, buzz)
 
 while True:
     engine.run()
