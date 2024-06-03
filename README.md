@@ -20,4 +20,4 @@ For pico breadboard kit 's 2.8 inch touch screen
 ![demo2](https://github.com/geeekpi/picoBDK/blob/main/imgs/PicoShow-2.jpg)
 ## More information
 * Please visit : 
-![WIKI.52pi.com](https://wiki.52pi.com/index.php?title=EP-0166)
+![wiki.52pi.com](https://wiki.52pi.com/index.php?title=EP-0164)
